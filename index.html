@@ -737,7 +737,7 @@
     </div>
     <div class="stat">
       <div class="stat-num" id="stat-files">0</div>
-      <div class="stat-label">Links</div>
+      <div class="stat-label">Files</div>
     </div>
   </div>
 </section>
@@ -861,9 +861,14 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Modpack Links <span>*</span> <span style="color:var(--text-dim);font-weight:400;">(supports multiple)</span></label>
-        <div id="linkList"></div>
-        <button type="button" class="btn btn-ghost" style="margin-top:10px;padding:8px 14px;width:auto;font-size:0.82rem;" onclick="addLinkField()">+ Add Link</button>
+        <label class="form-label">Modpack Files <span>*</span> <span style="color:var(--text-dim);font-weight:400;">(supports multiple)</span></label>
+        <div class="drop-zone" id="filesDrop">
+          <input type="file" id="f_files" multiple onchange="handleFilesChange(this)" />
+          <div class="drop-zone-icon">📁</div>
+          <div class="drop-zone-text">Click or drag files to upload</div>
+          <div class="drop-zone-sub">.zip, .mrpack, .jar or any file type</div>
+        </div>
+        <div class="file-list" id="fileList"></div>
       </div>
 
       <button class="btn btn-primary" onclick="submitModpack()">🚀 Publish Modpack</button>
@@ -904,6 +909,7 @@ function savePacks(arr) {
 
 let packs = loadPacks();
 let activeFilter = 'all';
+let selectedFiles = [];
 let logoDataUrl = null;
 
 // ──────────────────────────────────────────────
@@ -956,16 +962,16 @@ function openSubmitModal() {
     document.getElementById(id).value = '';
   });
   document.getElementById('f_logo').value  = '';
-  document.getElementById('linkList').innerHTML = '';
+  document.getElementById('f_files').value = '';
+  document.getElementById('fileList').innerHTML = '';
   document.getElementById('logoPreviewWrap').style.display = 'none';
-  selectedLinks = [];
+  selectedFiles = [];
   logoDataUrl   = null;
-  addLinkField();
   openModal('submitModal');
 }
 
 // ──────────────────────────────────────────────
-//  LOGO HANDLING
+//  FILE HANDLING
 // ──────────────────────────────────────────────
 function handleLogoChange(input) {
   const file = input.files[0];
@@ -980,37 +986,44 @@ function handleLogoChange(input) {
   reader.readAsDataURL(file);
 }
 
-// Drag-over highlight for logo only
-['logoDrop'].forEach(id => {
+function handleFilesChange(input) {
+  const incoming = Array.from(input.files);
+  incoming.forEach(f => {
+    if (!selectedFiles.find(x => x.name === f.name && x.size === f.size)) {
+      selectedFiles.push(f);
+    }
+  });
+  renderFileList();
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  renderFileList();
+}
+
+function renderFileList() {
+  const list = document.getElementById('fileList');
+  list.innerHTML = selectedFiles.map((f, i) => `
+    <div class="file-item">
+      <span class="file-item-name">📄 ${f.name} <span style="color:var(--text-dim)">(${formatSize(f.size)})</span></span>
+      <span class="file-item-remove" onclick="removeFile(${i})">✕</span>
+    </div>
+  `).join('');
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024)       return bytes + ' B';
+  if (bytes < 1048576)    return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1048576).toFixed(1) + ' MB';
+}
+
+// Drag-over highlight
+['logoDrop','filesDrop'].forEach(id => {
   const el = document.getElementById(id);
   el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
   el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
   el.addEventListener('drop', () => el.classList.remove('drag-over'));
 });
-
-// ──────────────────────────────────────────────
-//  LINK HANDLING
-// ──────────────────────────────────────────────
-let selectedLinks = [];
-
-function addLinkField() {
-  const list = document.getElementById('linkList');
-  const idx = list.children.length;
-  const row = document.createElement('div');
-  row.className = 'file-item';
-  row.style.marginBottom = '8px';
-  row.innerHTML = \`
-    <input type="url" class="form-input link-input" placeholder="https://www.curseforge.com/minecraft/modpacks/..." style="flex:1;margin-right:8px;" />
-    <span class="file-item-remove" onclick="this.parentElement.remove()">✕</span>
-  \`;
-  list.appendChild(row);
-}
-
-function getLinks() {
-  return Array.from(document.querySelectorAll('.link-input'))
-    .map(i => i.value.trim())
-    .filter(Boolean);
-}
 
 // ──────────────────────────────────────────────
 //  SUBMIT MODPACK
@@ -1022,36 +1035,45 @@ function submitModpack() {
   const loader  = document.getElementById('f_loader').value;
   const packver = document.getElementById('f_packver').value.trim();
   const author  = document.getElementById('f_author').value.trim();
-  const links   = getLinks();
 
-  if (!name)          return showToast('❌ Modpack name is required', 'error');
-  if (!desc)          return showToast('❌ Description is required', 'error');
-  if (!version)       return showToast('❌ Select a Minecraft version', 'error');
-  if (!loader)        return showToast('❌ Select a mod loader', 'error');
-  if (links.length === 0) return showToast('❌ Add at least one link', 'error');
+  if (!name)    return showToast('❌ Modpack name is required', 'error');
+  if (!desc)    return showToast('❌ Description is required', 'error');
+  if (!version) return showToast('❌ Select a Minecraft version', 'error');
+  if (!loader)  return showToast('❌ Select a mod loader', 'error');
+  if (selectedFiles.length === 0) return showToast('❌ Add at least one file', 'error');
 
-  const pack = {
-    id: Date.now(),
-    name, desc, version, loader, packver, author,
-    logo: logoDataUrl,
-    links,
-    createdAt: new Date().toISOString()
-  };
+  // Read all files as base64 and store metadata
+  const filePromises = selectedFiles.map(f => new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = e => res({ name: f.name, size: f.size, data: e.target.result });
+    reader.readAsDataURL(f);
+  }));
 
-  packs.unshift(pack);
+  Promise.all(filePromises).then(fileData => {
+    const pack = {
+      id: Date.now(),
+      name, desc, version, loader, packver, author,
+      logo: logoDataUrl,
+      files: fileData,
+      createdAt: new Date().toISOString()
+    };
 
-  try {
-    savePacks(packs);
-  } catch(e) {
-    pack.logo = null;
-    packs[0] = pack;
-    try { savePacks(packs); } catch(e2) { /* ignore */ }
-  }
+    packs.unshift(pack);
+    try {
+      savePacks(packs);
+    } catch(e) {
+      // If storage is full (files are large), store without file data
+      const lightPack = { ...pack, files: fileData.map(f => ({ name: f.name, size: f.size, data: null })) };
+      packs[0] = lightPack;
+      savePacks(packs);
+      showToast('⚠️ Files too large for browser storage — metadata saved only', 'error');
+    }
 
-  closeModal('submitModal');
-  renderCards();
-  updateStats();
-  showToast('✅ Modpack published!', 'success');
+    closeModal('submitModal');
+    renderCards();
+    updateStats();
+    showToast('✅ Modpack published!', 'success');
+  });
 }
 
 // ──────────────────────────────────────────────
@@ -1111,7 +1133,7 @@ function renderCards() {
           ${p.packver ? `<span class="tag tag-version">${escHtml(p.packver)}</span>` : ''}
         </div>
         <div class="card-files">
-          🔗 ${(p.links||[]).length} link${(p.links||[]).length !== 1 ? 's' : ''}
+          📁 ${p.files.length} file${p.files.length !== 1 ? 's' : ''}
           ${p.author ? ` · by <strong>${escHtml(p.author)}</strong>` : ''}
         </div>
       </div>
@@ -1128,10 +1150,12 @@ function openDetail(id) {
 
   document.getElementById('detail_title').textContent = p.name;
 
-  const linksHtml = (p.links||[]).map(url => `
+  const filesHtml = p.files.map((f, i) => `
     <div class="download-item">
-      <span class="download-name" style="word-break:break-all;">🔗 ${escHtml(url)}</span>
-      <a href="${escHtml(url)}" target="_blank" rel="noopener" class="download-btn" style="margin-left:12px;white-space:nowrap;">↗ Open</a>
+      <span class="download-name">📄 ${escHtml(f.name)} <span style="color:var(--text-dim)">(${formatSize(f.size)})</span></span>
+      ${f.data
+        ? `<span class="download-btn" onclick="downloadFile('${encodeURIComponent(f.name)}', \`${f.data}\`)">⬇ Download</span>`
+        : `<span style="color:var(--text-dim);font-size:0.75rem">File not stored</span>`}
     </div>
   `).join('');
 
@@ -1151,11 +1175,18 @@ function openDetail(id) {
       </div>
     </div>
     <div class="detail-desc">${escHtml(p.desc)}</div>
-    <div class="files-section-title">🔗 Download Links (${(p.links||[]).length})</div>
-    ${linksHtml}
+    <div class="files-section-title">📁 Files (${p.files.length})</div>
+    ${filesHtml}
   `;
 
   openModal('detailModal');
+}
+
+function downloadFile(name, dataUrl) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = decodeURIComponent(name);
+  a.click();
 }
 
 // ──────────────────────────────────────────────
@@ -1163,7 +1194,7 @@ function openDetail(id) {
 // ──────────────────────────────────────────────
 function updateStats() {
   const versions = [...new Set(packs.map(p => p.version))].filter(Boolean);
-  const totalFiles = packs.reduce((s, p) => s + (p.links||[]).length, 0);
+  const totalFiles = packs.reduce((s, p) => s + p.files.length, 0);
   document.getElementById('stat-count').textContent    = packs.length;
   document.getElementById('stat-versions').textContent = versions.length || '—';
   document.getElementById('stat-files').textContent    = totalFiles;
