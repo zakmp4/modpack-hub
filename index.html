@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modpack Hub — pvpvotes.space</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d0d10;
+      --surface: #16161a;
+      --surface2: #1e1e24;
+      --surface3: #26262f;
+      --border: #2e2e3a;
+      --accent: #c17cff;
+      --accent2: #9b5de5;
+      --accent-glow: rgba(193,124,255,0.15);
+      --text: #ececf1;
+      --text-muted: #8e8ea0;
+      --text-dim: #555568;
+      --green: #4ade80;
+      --red: #f87171;
+      --orange: #fb923c;
+      --blue: #60a5fa;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Noise texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13,13,16,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .domain-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 80px 2rem 60px;
+    }
+
+    .hero-glow {
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, rgba(193,124,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #fff 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 480px;
+      margin: 0 auto 32px;
+      line-height: 1.7;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Filter Bar ── */
+    .filter-bar {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto 32px;
+      padding: 0 2rem;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-wrap {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px 10px 40px;
+      color: var(--text);
+      font-family: 'Sora', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap input::placeholder { color: var(--text-dim); }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 15px;
+    }
+
+    .filter-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Sora', sans-serif;
+    }
+
+    .filter-chip:hover, .filter-chip.active {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Grid ── */
+    .grid {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem 120px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(193,124,255,0.4);
+      box-shadow: 0 8px 40px rgba(193,124,255,0.1);
+    }
+
+    .card-banner {
+      height: 130px;
+      background: linear-gradient(135deg, var(--surface2), var(--surface3));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-banner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 50%, rgba(193,124,255,0.1), transparent 60%);
+    }
+
+    .card-logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 14px;
+      object-fit: cover;
+      border: 2px solid rgba(255,255,255,0.1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-logo-placeholder {
+      width: 72px;
+      height: 72px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-body { padding: 18px; }
+
+    .card-name {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .card-desc {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .card-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-weight: 500;
+    }
+
+    .tag-version { background: rgba(96,165,250,0.15); color: var(--blue); }
+    .tag-forge   { background: rgba(251,146,60,0.15);  color: var(--orange); }
+    .tag-fabric  { background: rgba(74,222,128,0.15);  color: var(--green); }
+    .tag-neo     { background: rgba(193,124,255,0.15); color: var(--accent); }
+    .tag-quilt   { background: rgba(248,113,113,0.15); color: var(--red); }
+
+    .card-files {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { color: var(--text-muted); font-weight: 500; margin-bottom: 8px; }
+    .empty-state p { color: var(--text-dim); font-size: 0.85rem; }
+
+    /* ── Floating Add Button ── */
+    .fab {
+      position: fixed;
+      bottom: 36px;
+      right: 36px;
+      z-index: 200;
+      width: 52px;
+      height: 52px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-dim);
+      font-size: 22px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    .fab:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 4px 24px var(--accent-glow);
+      transform: scale(1.08);
+    }
+
+    /* ── Modal Base ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: translateY(20px);
+      transition: transform 0.25s;
+    }
+
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal-header {
+      padding: 22px 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 16px;
+      transition: all 0.15s;
+    }
+
+    .modal-close:hover { background: var(--surface3); color: var(--text); }
+
+    .modal-body { padding: 0 24px 24px; }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 18px; }
+
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 7px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .form-label span { color: var(--accent); }
+
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'Sora', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .form-input::placeholder, .form-textarea::placeholder { color: var(--text-dim); }
+
+    .form-textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+
+    .form-select { cursor: pointer; }
+    .form-select option { background: var(--surface2); }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ── File Drop Zone ── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-zone-icon { font-size: 28px; margin-bottom: 8px; }
+    .drop-zone-text { font-size: 0.83rem; color: var(--text-muted); line-height: 1.5; }
+    .drop-zone-sub  { font-size: 0.73rem; color: var(--text-dim); margin-top: 4px; }
+
+    .file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+
+    .file-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+    }
+
+    .file-item-name {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 300px;
+    }
+
+    .file-item-remove {
+      color: var(--red);
+      cursor: pointer;
+      font-size: 13px;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-family: 'Sora', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: white;
+      width: 100%;
+      padding: 12px;
+      box-shadow: 0 4px 20px rgba(193,124,255,0.25);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 4px 28px rgba(193,124,255,0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+    }
+
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Password Modal ── */
+    .pw-icon { text-align: center; font-size: 40px; margin-bottom: 16px; }
+    .pw-hint {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+
+    .pw-error {
+      color: var(--red);
+      font-size: 0.8rem;
+      margin-top: 8px;
+      text-align: center;
+      display: none;
+    }
+
+    /* ── Detail Modal ── */
+    .detail-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+      border: 2px solid rgba(255,255,255,0.1);
+    }
+
+    .detail-logo-ph {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+    }
+
+    .detail-header-row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .detail-meta-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .detail-desc { font-size: 0.9rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 20px; }
+
+    .files-section-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .download-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      transition: border-color 0.2s;
+    }
+
+    .download-item:hover { border-color: var(--accent); }
+
+    .download-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .download-btn {
+      font-size: 0.75rem;
+      color: var(--accent);
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 110px;
+      right: 36px;
+      z-index: 500;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 18px;
+      font-size: 0.85rem;
+      color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transform: translateY(20px);
+      opacity: 0;
+      transition: all 0.3s;
+      max-width: 260px;
+    }
+
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: var(--green); }
+    .toast.error   { border-color: var(--red); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .form-row { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .stats-row { gap: 24px; }
+      .fab { bottom: 20px; right: 20px; }
+      .toast { right: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">📦</div>
+    Modpack Hub
+  </div>
+  <div class="domain-badge">pvpvotes.space</div>
+</header>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <h1>Browse Modpacks</h1>
+  <p>Discover and download curated Minecraft modpacks for our server community.</p>
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-num" id="stat-count">0</div>
+      <div class="stat-label">Modpacks</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-versions">—</div>
+      <div class="stat-label">MC Versions</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-files">0</div>
+      <div class="stat-label">Files</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Filter Bar ── -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search modpacks…" oninput="renderCards()" />
+  </div>
+  <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
+  <button class="filter-chip" onclick="setFilter('Forge', this)">Forge</button>
+  <button class="filter-chip" onclick="setFilter('Fabric', this)">Fabric</button>
+  <button class="filter-chip" onclick="setFilter('NeoForge', this)">NeoForge</button>
+  <button class="filter-chip" onclick="setFilter('Quilt', this)">Quilt</button>
+</div>
+
+<!-- ── Grid ── -->
+<div class="grid" id="cardGrid"></div>
+
+<!-- ── Floating Admin Button ── -->
+<button class="fab" title="Admin Panel" onclick="openPasswordModal()">🔒</button>
+
+<!-- ────────────────────────────────────────────
+     PASSWORD MODAL
+──────────────────────────────────────────── -->
+<div class="modal-overlay" id="pwModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <div class="modal-title">Admin Access</div>
+      <div class="modal-close" onclick="closeModal('pwModal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="pw-icon">🔐</div>
+      <div class="pw-hint">Enter the admin password to submit or manage modpacks.</div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="pwInput" placeholder="Enter password…"
+               onkeydown="if(event.key==='Enter') checkPassword()" />
+        <div class="pw-error" id="pwError">❌ Incorrect password. Try again.</div>
+      </div>
+      <button class="btn btn-primary" onclick="checkPassword()">Unlock →</button>
+      <button class="btn btn-ghost" onclick="closeModal('pwModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────
+     SUBMIT MODPACK MODAL
+──────────────────────────────────────────── -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">➕ Add Modpack</div>
+      <div class="modal-close" onclick="closeModal('submitModal')">✕</div>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-group">
+        <label class="form-label">Modpack Name <span>*</span></label>
+        <input type="text" class="form-input" id="f_name" placeholder="e.g. Vault Hunters 3rd Edition" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description <span>*</span></label>
+        <textarea class="form-textarea" id="f_desc" placeholder="What's this modpack about? What mods are included? What's the gameplay style?"></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">MC Version <span>*</span></label>
+          <select class="form-select" id="f_version">
+            <option value="">Select…</option>
+            <option>1.21.1</option>
+            <option>1.21</option>
+            <option>1.20.4</option>
+            <option>1.20.1</option>
+            <option>1.19.4</option>
+            <option>1.19.2</option>
+            <option>1.18.2</option>
+            <option>1.16.5</option>
+            <option>1.12.2</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mod Loader <span>*</span></label>
+          <select class="form-select" id="f_loader">
+            <option value="">Select…</option>
+            <option>Forge</option>
+            <option>Fabric</option>
+            <option>NeoForge</option>
+            <option>Quilt</option>
+            <option>Vanilla</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Pack Version</label>
+          <input type="text" class="form-input" id="f_packver" placeholder="e.g. v1.4.2" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Author / Creator</label>
+          <input type="text" class="form-input" id="f_author" placeholder="e.g. FTB Team" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Logo Image</label>
+        <div class="drop-zone" id="logoDrop">
+          <input type="file" id="f_logo" accept="image/*" onchange="handleLogoChange(this)" />
+          <div class="drop-zone-icon">🖼️</div>
+          <div class="drop-zone-text">Click or drag a logo image</div>
+          <div class="drop-zone-sub">PNG, JPG, GIF — recommended 256×256</div>
+          <div id="logoPreviewWrap" style="display:none; margin-top:12px;">
+            <img id="logoPreview" style="width:60px;height:60px;border-radius:10px;object-fit:cover;border:2px solid var(--border);" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Modpack Files <span>*</span> <span style="color:var(--text-dim);font-weight:400;">(supports multiple)</span></label>
+        <div class="drop-zone" id="filesDrop">
+          <input type="file" id="f_files" multiple onchange="handleFilesChange(this)" />
+          <div class="drop-zone-icon">📁</div>
+          <div class="drop-zone-text">Click or drag files to upload</div>
+          <div class="drop-zone-sub">.zip, .mrpack, .jar or any file type</div>
+        </div>
+        <div class="file-list" id="fileList"></div>
+      </div>
+
+      <button class="btn btn-primary" onclick="submitModpack()">🚀 Publish Modpack</button>
+      <button class="btn btn-ghost" onclick="closeModal('submitModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────
+     DETAIL MODAL
+──────────────────────────────────────────── -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="detail_title">Modpack</div>
+      <div class="modal-close" onclick="closeModal('detailModal')">✕</div>
+    </div>
+    <div class="modal-body" id="detail_body"></div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ──────────────────────────────────────────────
+//  DATA STORE  (localStorage for persistence)
+// ──────────────────────────────────────────────
+const STORAGE_KEY = 'modpackhub_packs';
+const ADMIN_PASS  = 'gn348tngdfg9';
+
+function loadPacks() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+}
+function savePacks(arr) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+}
+
+let packs = loadPacks();
+let activeFilter = 'all';
+let selectedFiles = [];
+let logoDataUrl = null;
+
+// ──────────────────────────────────────────────
+//  MODALS
+// ──────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id === 'pwModal') {
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwError').style.display = 'none';
+  }
+}
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => {
+    if (e.target === el) closeModal(el.id);
+  });
+});
+
+// ──────────────────────────────────────────────
+//  PASSWORD
+// ──────────────────────────────────────────────
+function openPasswordModal() {
+  openModal('pwModal');
+  setTimeout(() => document.getElementById('pwInput').focus(), 100);
+}
+
+function checkPassword() {
+  const val = document.getElementById('pwInput').value;
+  if (val === ADMIN_PASS) {
+    closeModal('pwModal');
+    openSubmitModal();
+  } else {
+    document.getElementById('pwError').style.display = 'block';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+  }
+}
+
+// ──────────────────────────────────────────────
+//  SUBMIT MODAL
+// ──────────────────────────────────────────────
+function openSubmitModal() {
+  // Reset form
+  ['f_name','f_desc','f_version','f_loader','f_packver','f_author'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f_logo').value  = '';
+  document.getElementById('f_files').value = '';
+  document.getElementById('fileList').innerHTML = '';
+  document.getElementById('logoPreviewWrap').style.display = 'none';
+  selectedFiles = [];
+  logoDataUrl   = null;
+  openModal('submitModal');
+}
+
+// ──────────────────────────────────────────────
+//  FILE HANDLING
+// ──────────────────────────────────────────────
+function handleLogoChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    logoDataUrl = e.target.result;
+    const preview = document.getElementById('logoPreview');
+    preview.src = logoDataUrl;
+    document.getElementById('logoPreviewWrap').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleFilesChange(input) {
+  const incoming = Array.from(input.files);
+  incoming.forEach(f => {
+    if (!selectedFiles.find(x => x.name === f.name && x.size === f.size)) {
+      selectedFiles.push(f);
+    }
+  });
+  renderFileList();
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  renderFileList();
+}
+
+function renderFileList() {
+  const list = document.getElementById('fileList');
+  list.innerHTML = selectedFiles.map((f, i) => `
+    <div class="file-item">
+      <span class="file-item-name">📄 ${f.name} <span style="color:var(--text-dim)">(${formatSize(f.size)})</span></span>
+      <span class="file-item-remove" onclick="removeFile(${i})">✕</span>
+    </div>
+  `).join('');
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024)       return bytes + ' B';
+  if (bytes < 1048576)    return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1048576).toFixed(1) + ' MB';
+}
+
+// Drag-over highlight
+['logoDrop','filesDrop'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+  el.addEventListener('drop', () => el.classList.remove('drag-over'));
+});
+
+// ──────────────────────────────────────────────
+//  SUBMIT MODPACK
+// ──────────────────────────────────────────────
+function submitModpack() {
+  const name    = document.getElementById('f_name').value.trim();
+  const desc    = document.getElementById('f_desc').value.trim();
+  const version = document.getElementById('f_version').value;
+  const loader  = document.getElementById('f_loader').value;
+  const packver = document.getElementById('f_packver').value.trim();
+  const author  = document.getElementById('f_author').value.trim();
+
+  if (!name)    return showToast('❌ Modpack name is required', 'error');
+  if (!desc)    return showToast('❌ Description is required', 'error');
+  if (!version) return showToast('❌ Select a Minecraft version', 'error');
+  if (!loader)  return showToast('❌ Select a mod loader', 'error');
+  if (selectedFiles.length === 0) return showToast('❌ Add at least one file', 'error');
+
+  // Read all files as base64 and store metadata
+  const filePromises = selectedFiles.map(f => new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = e => res({ name: f.name, size: f.size, data: e.target.result });
+    reader.readAsDataURL(f);
+  }));
+
+  Promise.all(filePromises).then(fileData => {
+    const pack = {
+      id: Date.now(),
+      name, desc, version, loader, packver, author,
+      logo: logoDataUrl,
+      files: fileData,
+      createdAt: new Date().toISOString()
+    };
+
+    packs.unshift(pack);
+    try {
+      savePacks(packs);
+    } catch(e) {
+      // If storage is full (files are large), store without file data
+      const lightPack = { ...pack, files: fileData.map(f => ({ name: f.name, size: f.size, data: null })) };
+      packs[0] = lightPack;
+      savePacks(packs);
+      showToast('⚠️ Files too large for browser storage — metadata saved only', 'error');
+    }
+
+    closeModal('submitModal');
+    renderCards();
+    updateStats();
+    showToast('✅ Modpack published!', 'success');
+  });
+}
+
+// ──────────────────────────────────────────────
+//  FILTER
+// ──────────────────────────────────────────────
+function setFilter(val, btn) {
+  activeFilter = val;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+
+// ──────────────────────────────────────────────
+//  LOADER TAG
+// ──────────────────────────────────────────────
+function loaderClass(loader) {
+  const map = { Forge: 'tag-forge', Fabric: 'tag-fabric', NeoForge: 'tag-neo', Quilt: 'tag-quilt' };
+  return map[loader] || 'tag-version';
+}
+
+// ──────────────────────────────────────────────
+//  RENDER CARDS
+// ──────────────────────────────────────────────
+function renderCards() {
+  const query  = document.getElementById('searchInput').value.toLowerCase();
+  const grid   = document.getElementById('cardGrid');
+
+  let filtered = packs.filter(p => {
+    const matchFilter = activeFilter === 'all' || p.loader === activeFilter;
+    const matchSearch = !query || p.name.toLowerCase().includes(query) || p.desc.toLowerCase().includes(query);
+    return matchFilter && matchSearch;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📦</div>
+        <h3>No modpacks found</h3>
+        <p>${packs.length === 0 ? 'Click the 🔒 button below to add the first modpack.' : 'Try a different search or filter.'}</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => `
+    <div class="card" onclick="openDetail(${p.id})">
+      <div class="card-banner">
+        ${p.logo
+          ? `<img class="card-logo" src="${p.logo}" alt="${p.name} logo" />`
+          : `<div class="card-logo-placeholder">📦</div>`}
+      </div>
+      <div class="card-body">
+        <div class="card-name">${escHtml(p.name)}</div>
+        <div class="card-desc">${escHtml(p.desc)}</div>
+        <div class="card-meta">
+          <span class="tag tag-version">${escHtml(p.version)}</span>
+          <span class="tag ${loaderClass(p.loader)}">${escHtml(p.loader)}</span>
+          ${p.packver ? `<span class="tag tag-version">${escHtml(p.packver)}</span>` : ''}
+        </div>
+        <div class="card-files">
+          📁 ${p.files.length} file${p.files.length !== 1 ? 's' : ''}
+          ${p.author ? ` · by <strong>${escHtml(p.author)}</strong>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ──────────────────────────────────────────────
+//  DETAIL MODAL
+// ──────────────────────────────────────────────
+function openDetail(id) {
+  const p = packs.find(x => x.id === id);
+  if (!p) return;
+
+  document.getElementById('detail_title').textContent = p.name;
+
+  const filesHtml = p.files.map((f, i) => `
+    <div class="download-item">
+      <span class="download-name">📄 ${escHtml(f.name)} <span style="color:var(--text-dim)">(${formatSize(f.size)})</span></span>
+      ${f.data
+        ? `<span class="download-btn" onclick="downloadFile('${encodeURIComponent(f.name)}', \`${f.data}\`)">⬇ Download</span>`
+        : `<span style="color:var(--text-dim);font-size:0.75rem">File not stored</span>`}
+    </div>
+  `).join('');
+
+  document.getElementById('detail_body').innerHTML = `
+    <div class="detail-header-row">
+      ${p.logo
+        ? `<img class="detail-logo" src="${p.logo}" alt="${escHtml(p.name)}" />`
+        : `<div class="detail-logo-ph">📦</div>`}
+      <div>
+        <div style="font-size:1.1rem;font-weight:600;letter-spacing:-0.02em;">${escHtml(p.name)}</div>
+        ${p.author ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-top:4px;">by ${escHtml(p.author)}</div>` : ''}
+        <div class="detail-meta-tags">
+          <span class="tag tag-version">${escHtml(p.version)}</span>
+          <span class="tag ${loaderClass(p.loader)}">${escHtml(p.loader)}</span>
+          ${p.packver ? `<span class="tag tag-version">${escHtml(p.packver)}</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="detail-desc">${escHtml(p.desc)}</div>
+    <div class="files-section-title">📁 Files (${p.files.length})</div>
+    ${filesHtml}
+  `;
+
+  openModal('detailModal');
+}
+
+function downloadFile(name, dataUrl) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = decodeURIComponent(name);
+  a.click();
+}
+
+// ──────────────────────────────────────────────
+//  STATS
+// ──────────────────────────────────────────────
+function updateStats() {
+  const versions = [...new Set(packs.map(p => p.version))].filter(Boolean);
+  const totalFiles = packs.reduce((s, p) => s + p.files.length, 0);
+  document.getElementById('stat-count').textContent    = packs.length;
+  document.getElementById('stat-versions').textContent = versions.length || '—';
+  document.getElementById('stat-files').textContent    = totalFiles;
+}
+
+// ──────────────────────────────────────────────
+//  TOAST
+// ──────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ──────────────────────────────────────────────
+//  UTILS
+// ──────────────────────────────────────────────
+function escHtml(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ──────────────────────────────────────────────
+//  INIT
+// ──────────────────────────────────────────────
+renderCards();
+updateStats();
+</script>
+</body>
+</html>
